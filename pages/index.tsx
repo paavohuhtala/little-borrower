@@ -109,7 +109,7 @@ const Home: NextPage = () => {
           .slice(0, questionNumber + 1 + (presenterMode ? 1 : 0))
           .map((item, currentQuestion) => {
             if ("section" in item) {
-              return <h2>{item.section}</h2>;
+              return <h2 key={currentQuestion}>{item.section}</h2>;
             } else {
               const { question, answer } = item;
               const pastQuestion = currentQuestion < questionNumber;
@@ -123,7 +123,7 @@ const Home: NextPage = () => {
               };
 
               return (
-                <div style={style}>
+                <div style={style} key={currentQuestion}>
                   <Question
                     key={currentQuestion}
                     index={currentQuestion}
