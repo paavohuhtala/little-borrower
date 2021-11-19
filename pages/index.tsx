@@ -1,6 +1,7 @@
 import type { NextPage } from "next";
 import Head from "next/head";
 import { useCallback, useEffect, useState } from "react";
+import * as branding from "./branding";
 
 import { questions } from "./questions";
 
@@ -94,13 +95,13 @@ const Home: NextPage = () => {
   return (
     <div className={styles.container}>
       <Head>
-        <title>The Little TypeScripter</title>
-        <meta name="description" content="The Little TypeScripter" />
+        <title>{branding.title}</title>
+        <meta name="description" content={branding.title} />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
       <main className={styles.main}>
-        <h1 className={styles.title}>The Little TypeScripter</h1>
+        <h1 className={styles.title}>{branding.title}</h1>
 
         <br />
         <br />
