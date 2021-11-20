@@ -3,9 +3,10 @@ import Head from "next/head";
 import { useCallback, useEffect, useState } from "react";
 import * as branding from "./branding";
 
-import { questions } from "./questions";
+import { ChoiceContext, questions } from "./questions";
 
 import styles from "../styles/Home.module.css";
+import questionStyles from "../styles/Question.module.scss";
 
 const presenterMode = (() => {
   if (typeof window !== "undefined") {
@@ -45,16 +46,24 @@ const Home: NextPage = () => {
     localStorage.setItem("highlights", JSON.stringify(highlights));
   }, [highlights]);
 
+  function nextStep() {
+    setStep((s) => Math.min(questions.length * 2 - 1, s + 1));
+  }
+
+  function previousStep() {
+    setStep((s) => Math.max(0, s - 1));
+  }
+
   useEffect(() => {
     function handler(e: KeyboardEvent) {
       switch (e.key) {
         case " ":
         case "ArrowRight":
-          setStep((s) => Math.min(questions.length * 2 - 1, s + 1));
+          nextStep();
           return;
         case "Backspace":
         case "ArrowLeft":
-          setStep((s) => Math.max(0, s - 1));
+          previousStep();
           return;
         case "Home":
           setStep(0);
@@ -106,11 +115,15 @@ const Home: NextPage = () => {
         <br />
         <br />
 
+        <ChoiceContext.Provider value={{ nextStep }}>
+
         {questions
           .slice(0, questionNumber + 1 + (presenterMode ? 1 : 0))
           .map((item, currentQuestion) => {
             if ("section" in item) {
-              return <h2 key={currentQuestion}>{item.section}</h2>;
+              return <h2 key={currentQuestion} className={styles.sectionTitle}>{item.section}</h2>;
+            } else if ("block" in item) {
+              return <div className={questionStyles.block} key={currentQuestion}>{item.block}</div>;
             } else {
               const { question, answer } = item;
               const pastQuestion = currentQuestion < questionNumber;
@@ -125,7 +138,7 @@ const Home: NextPage = () => {
 
               return (
                 <div style={style} key={currentQuestion}>
-                  <Question
+                  <QuestionRow
                     key={currentQuestion}
                     index={currentQuestion}
                     question={question}
@@ -143,6 +156,7 @@ const Home: NextPage = () => {
               );
             }
           })}
+          </ChoiceContext.Provider>
       </main>
     </div>
   );
@@ -157,7 +171,7 @@ interface QuestionProps {
   onClick: () => void;
 }
 
-function Question({
+function QuestionRow({
   index,
   question,
   answer,
@@ -166,41 +180,15 @@ function Question({
   onClick,
 }: QuestionProps) {
   return (
-    <div className="row" onClick={onClick}>
-      <div className="index">{index}</div>
-      <div className="question">{question}</div>
+    <div className={questionStyles.questionRow} data-past={past ? true : undefined} onClick={onClick}>
+      <div className={questionStyles.index}>{index}</div>
+      <div className={questionStyles.question}>{question}</div>
       <div
-        className="answer"
+        className={questionStyles.answer}
         style={{ opacity: showAnswer ? 1 : presenterMode ? 0.1 : 0 }}
       >
         {answer}
       </div>
-      <style jsx>
-        {`
-          .row {
-            display: flex;
-            width: 100%;
-            border-bottom: 1px solid #e8e8e8;
-            min-height: 50px;
-            padding-top: 10px;
-            padding-bottom: 10px;
-            opacity: ${past ? 0.3 : 1};
-            gap: 20px;
-          }
-
-          .question,
-          .answer {
-            width: 100%;
-          }
-
-          .index {
-            position: "absolute";
-            left: 0;
-            top: 0;
-            font-size: 0.7em;
-          }
-        `}
-      </style>
     </div>
   );
 }

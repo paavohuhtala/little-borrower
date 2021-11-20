@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import SyntaxHighlighter from "react-syntax-highlighter";
 import style from "react-syntax-highlighter/dist/cjs/styles/hljs/xcode";
 
-const TS: React.FC = ({ children }) => {
+import questionStyles from "../styles/Question.module.scss";
+
+const Rust: React.FC<{ language?: "rust" | null }> = ({ children, language = "rust" }) => {
   return (
     <SyntaxHighlighter
       customStyle={{ display: "inline-block", padding: 0, fontSize: "14px" }}
-      language="typescript"
+      language={language ?? undefined}
       style={style}
     >
       {children}
@@ -14,14 +16,46 @@ const TS: React.FC = ({ children }) => {
   );
 };
 
+const Law: React.FC<{ title: string }> = ({ children, title }) => {
+  return <div className={questionStyles.law}>
+    <h3>{title}</h3>
+    {children}
+  </div>
+}
+
+export const ChoiceContext = React.createContext({ nextStep: () => { } });
+
+const Choice: React.FC<{}> = ({ children }) => {
+  const [selectedOption, setSelectedOption] = useState<number | undefined>()
+  const { nextStep } = useContext(ChoiceContext)
+
+  const setSelected = useCallback((option: number) => {
+    if (selectedOption === undefined) {
+      setTimeout(nextStep, 500)
+    }
+
+    setSelectedOption(option);
+  }, [nextStep]);
+
+  return <div className={questionStyles.choice} data-selected={selectedOption !== undefined ? 'true' : undefined}>
+    {React.Children.map(children, (option, index) => <button key={index} onClick={() => setSelected(index)} data-selected={selectedOption === index || undefined}>
+      {'> '}{option}
+    </button>)
+    }
+  </div>
+}
+
 export type Question =
   | {
-      question: JSX.Element;
-      answer: JSX.Element;
-    }
+    question: JSX.Element;
+    answer: JSX.Element;
+  }
   | {
-      section: string;
-    };
+    section: JSX.Element | string;
+  }
+  | {
+    block: JSX.Element;
+  };
 
 export const questions: Question[] = [
   {
@@ -31,978 +65,225 @@ export const questions: Question[] = [
   {
     question: (
       <p>
-        Have you read <em>The Little Schemer</em> or <em>The Little Typer</em>?
+        Have you read <em>The Little Schemer</em> or <em>The Little Typer</em>, or possibly even <a href="https://davazp.net/little-typescripter/"><em>The Little TypeScripter</em></a>?
       </p>
     ),
-    answer: <p>No...</p>,
+    answer: <Choice>
+      <span>Yes, and they were all Excellent!</span>
+      <span>No...</span>
+    </Choice>,
   },
   {
-    question: <p>Have you used TypeScript?</p>,
-    answer: <p>I have! But I am not sure if I understand it well.</p>,
+    question: <p>Have you used Rust?</p>,
+    answer: <p>I've looked into the basics, but I don't really understand this ownership and borrowing thing.</p>,
   },
   {
-    question: <p>Have you have dinner yet?</p>,
-    answer: <p>No, {`I'm not `} hungry yet.</p>,
+    question: <p>That is good enough. Have you had dinner yet?</p>,
+    answer: <p>As a matter of fact, yes.</p>,
   },
   {
-    question: <p>{"Let's play around with it a bit!"}</p>,
-    answer: <p>Ok!</p>,
+    question: <p>Any room for dessert?</p>,
+    answer: <p>You bet!</p>,
   },
-
   {
-    section: "Basic ingredients!",
+    section: <>My (not your) cake recipe</>,
   },
-
   {
     question: (
       <p>
-        {"What's the type of "}
-        <code>42</code>?
+        What is <code>cake_recipe</code>?
       </p>
     ),
     answer: (
       <p>
-        {"That's easy as pie! It's"} <code>number</code>.
+        Judging by the name, it is probably a variable. But of what type?
       </p>
     ),
   },
-
   {
-    question: <p>{"Is it the only valid type?"}</p>,
+    question: <>
+      <p><code>cake_recipe</code> is a local variable of type <code>Recipe</code>. We'll get to the definition of <code>Recipe</code> later.</p>
+      <p>Could you assign the cake recipe to a local variable named <code>table</code>?</p>
+    </>,
+
     answer: (
-      <p>
-        {"It could also be "} <code>number | undefined</code>.
-      </p>
+      <>
+        <p>
+          Sounds simple enough:
+        </p>
+        <Rust>
+          {`let table = cake_recipe;`}
+        </Rust>
+      </>
     ),
   },
 
   {
     question: (
       <p>
-        {"What is a value of type "}
-        <code>null</code>?
-      </p>
-    ),
-    answer: (
-      <p>
-        <code>null</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        {"How many values have type  "}
-        <code>null</code>?
+        Could you assign <code>cake_recipe</code> to a local variable named <code>bookshelf</code> as well?
       </p>
     ),
     answer: (
-      <p>
-        Just one: <code>null</code>.
-      </p>
+      <>
+        <p>
+          This should work:
+        </p>
+        <Rust>
+          {`let bookshelf = cake_recipe;`}
+        </Rust>
+        <p>
+          ... but wait a second! The compiler <i>did not</i> like that one bit. What did I do wrong?
+        </p>
+      </>
     ),
   },
-
   {
-    question: (
-      <p>
-        {"Is there a type that has  "}
-        <code>42</code> as its only value?
-      </p>
-    ),
-    answer: <p>{`I don't know.`}</p>,
-  },
-
-  {
-    question: (
-      <p>
-        <code>42</code> is also valid type. So are most literal values.
-        <br />
-        <TS>{`const x: 42 = 42;  // ok
-const x: 42 = 41;  // error
-`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        {`Oh! So it works for `} <code>true, false, "potato"</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>Indeed! They accept the corresponding type as a value only.</p>
-    ),
-    answer: <p>{`Cool. `}</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What are some values of the type <code>{`{ x: null }`}</code> ?
-      </p>
-    ),
-    answer: (
-      <p>
-        As before, <code>{`{x: null }`}</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: <p>Is there any other value with that type?</p>,
-    answer: <p>It should not...?</p>,
-  },
-
-  {
-    question: (
-      <p>
-        Well, <code>{`{ x: null, y: 0}`}</code> is also a valid value for that
-        type.
-      </p>
-    ),
-    answer: <p>How?</p>,
-  },
-
-  {
-    question: (
-      <p>
-        You should read interface types as "at least those properties". But it
-        might have more!
-      </p>
-    ),
-    answer: <p>I see!</p>,
-  },
-
-  {
-    question: <p>Are there other ways to create compound types?</p>,
-    answer: <p>Maybe?</p>,
-  },
-
-  {
-    question: (
-      <p>
-        TypeScript also supports tuples.
-        <br />
-        <TS>{`type T = [boolean, boolean]`}</TS>
-      </p>
-    ),
-
-    answer: (
-      <p>
-        Let me guess, <code>[true, false]</code> has that type.
-      </p>
-    ),
-  },
-
-  {
-    question: <p>You are learning fast!</p>,
-    answer: <div />,
-  },
-
-  {
-    question: <p>How many values have this type?</p>,
-    answer: <p>4.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        Finally, you can also type functions, for example
-        <br />
-        <br />
-        <TS>{`type T = (x: number) => number`}</TS>
-        <br />
-        <br />
-        or
-        <br />
-        <br />
-        <TS>{`function f (x: number): number { ... }`}</TS>
-      </p>
-    ),
-
-    answer: <p>I knew that.</p>,
-  },
-
-  {
-    section: "Combining ingredients",
-  },
-
-  {
-    question: (
-      <p>
-        What are some values for the type <code>string | number</code>?
-      </p>
-    ),
-    answer: (
-      <p>
-        <code>1</code>, <code>24</code>, and <code>"blueberry"</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        What about type <TS>{`type T = string & number`}</TS>?
-      </p>
-    ),
-    answer: (
-      <p>
-        That is impossible. There is no value that is both a <code>string</code>{" "}
-        and a <code>number</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: <p>So, how many values have that that type?</p>,
-    answer: <p>Zero.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        Exactly. The type <code>never</code> has also zero values.
-      </p>
-    ),
-    answer: <p>{`I don't see how that could be useful.`}</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What type is <code>string | never</code> equal to?
-      </p>
-    ),
-    answer: (
-      <p>
-        <code>string</code>
-        {`. Because any value with that type, must be of type `}{" "}
-        <code>string</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        What is a valid value for the type{" "}
-        <TS>{`type T = {x: number} & {y: number}`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        <TS>{`const obj: T = {x: 1, y: 3}`}</TS>
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        What is a valid value for the type{` `}
-        <TS>{`type T = {x: number} & {x: string}`}</TS>
-      </p>
-    ),
-    answer: <p>That is impossible as well.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What is a valid value for the type{" "}
-        <TS>{`type T = {x: number} | {y: number}`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        <TS>{`const obj: T = {x: 1}`}</TS>
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        Is <TS>{`{x: 1, y: 2}`}</TS> a valid value for that type?
-      </p>
-    ),
-    answer: <p>Yes</p>,
-  },
-
-  {
-    question: (
-      <p>
-        <TS>
+    block: (
+      <>
+        <Rust language={null}>
           {`
-type T = {x: number, z: number}
-       | {y: number, z: number}
-
-const obj: T = {x: 1, y: 2}
+error[E0382]: use of moved value: \`cake_recipe\`
+  --> src/main.rs:13:19
+   |
+2  |   let cake_recipe = Recipe {
+   |       ----------- move occurs because \`cake_recipe\` has type \`Recipe\`, which does not implement the \`Copy\` trait
+...
+12 |   let table = cake_recipe;
+   |               ----------- value moved here
+13 |   let bookshelf = cake_recipe;
+   |                   ^^^^^^^^^^^ value used here after move
 `}
-        </TS>{" "}
-        <br /> Is this valid?
+        </Rust>
+      </>
+    )
+  },
+  {
+    question: (
+      <p>
+        Instead of using <code>cake_recipe</code> again, what happens if you use <code>table</code> instead?
+      </p>
+    ),
+    answer: (
+      <>
+        <p>I don't expect that to make a difference, but let's try it anyway. So we would have:</p>
+        <Rust>
+          {`let table = cake_recipe;
+let bookshelf = table;`}
+        </Rust>
+        <p>And the compiler accepts it. Why?</p>
+      </>
+    )
+  },
+
+  {
+    question: (
+      <p>
+        Why, indeed. Assuming the compiler doesn't have anything against bookshelves, what could have happened instead?<code></code>
       </p>
     ),
     answer: (
       <p>
-        No. It fails. Because the value does not belong to any of the individual
-        types.
+        Does the assignment from <code>cake_recipe</code> to <code>table</code> also modify <code>cake_recipe</code>?
       </p>
     ),
   },
 
   {
-    question: (
+    question: <p>In a sense, yes. After the <i>value</i> of <code>cake_recipe</code> was used once, the compiler doesn't allow the <i>variable</i> to be used again.</p>,
+    answer: <>
+      <p>And the same is presumably true with <code>table</code> and <code>bookshelf</code> as well.</p>
       <p>
-        <TS>
-          {`type T = {x: number} | {y: number}
-const obj: T = {x: 1, y: 2}
-`}
-        </TS>{" "}
-        <br /> Why is this valid?
-      </p>
+        But you said the variable can't be used again. Never <i>ever</i> again?
+      </p></>,
+  },
+
+  {
+    question: <p>Could you assign the recipe back from <code>bookshelf</code> to <code>cake_recipe</code>?</p>,
+    answer: <p>Since variables are immutable by default in Rust, only if <code>cake_recipe</code> was <code>mut</code>able.</p>
+  },
+
+  {
+    question: <p>What if <code>cake_recipe</code> was a <code>mut</code>able variable?</p>,
+    answer: <>
+      <Rust>{`cake_recipe = bookshelf;`}</Rust>
+      <p>Yes, that is accepted by the compiler. And I can now use <code>cake_recipe</code> again.</p>
+      <Rust>{`let fridge_door = cake_recipe;`}</Rust>
+    </>
+  },
+
+  {
+    question: (
+      <>
+        <p>When a value is assigned to a variable, the variable becomes the <b>owner</b> of the value.</p>
+        <p>When the value of a variable is used (for example on the right side of an assignment), the ownership of the value is transferred to a new owner. This is known as a <b>move</b>.</p>
+        <p>What happens to the previous owner?</p>
+      </>
     ),
     answer: (
-      <p>
-        <code>obj</code> is a valid value for both <code>{`{x: number}`}</code>
-        <br /> and <code>{`{y: number}`}</code>, so it must be also in the
-        union.
-      </p>
+      <>
+        <p>The compiler did not allow us to use the value of the previous owner, but we can access the variable again after assigning (or moving?) something new to it.</p>
+      </>
     ),
+  },
+
+  {
+    question: <>
+      <p>Precisely. Moving a value from a variable to another <b>invalidates</b> the previous owner.</p>
+      <p>A variable which doesn't own anything cannot be used, except to assign a new value to it.</p>
+      <p>How many owners can a value have?</p>
+    </>,
+    answer: <>
+      <p>Since ownership is always moved on assignment, it seems that each value can have only one owner.</p>
+    </>
+  },
+
+  {
+    block: <>
+      <Law title="The First Law of Ownership">Each value has an owner.</Law>
+      <Law title="The Second Law of Ownership">Each value can have only one owner at a time. The ownership of a value can be moved between owners.</Law>
+    </>
   },
 
   {
     question: (
       <p>
-        Why is it valid
-        <br />
-        <TS>
-          {`
-type T = {x: number, z: number}
-       | {y: number, z: number}
-
-const obj: T = {x: 1, y: 2, z: 0}
-`}
-        </TS>
-        ?
+        Any questions at this point?
       </p>
     ),
-    answer: (
-      <p>
-        <code>obj</code> is a valid value for both types so it must be also in
-        the union.
-      </p>
-    ),
+    answer: <p>Just one: what is the point in all this? I don't see why having the same value in multiple variables is such a bad thing...</p>,
   },
 
   {
-    section: "Bread or Butter",
+    question: <p>Do you know about the <b>stack</b> and the <b>heap</b>?</p>,
+    answer: <p>They have something to do with memory, I think. I thought we were talking about ownership?</p>,
   },
 
   {
-    question: (
-      <p>
-        {`Let's go shopping`}
-        <br />
-        <TS>
-          {`
-type Bread = {
-  type: 'sour' | 'corn' | 'brioche',
-  weight: number
-}
-
-type Butter = { salty: boolean }
-
-type SideDish = Bread | Butter
-
-`}
-        </TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        Got it. Should I refrigate it?
-        <br />
-        <br />
-        <TS>{`function refrigerate (x: Bread | Butter) {
-  // ...
-}`}</TS>
-      </p>
-    ),
+    question: <p>Understanding them is important to understanding the final law of ownership, and the motivation for all this.</p>,
+    answer: <p>I could use a little reminder.</p>,
+  },
+  {
+    section: <>Aside: the Stack and the Heap</>
   },
 
   {
-    question: (
-      <p>
-        You can use regular control flow `(if, throw, ...)` to{" "}
-        <b>refine the type</b>
-      </p>
-    ),
-    answer: <p>Can you show me an example?</p>,
+    question: <>
+
+      <p>Both the stack and the heap are sections of memory, which are used by your program to store data at run time.</p>
+      <p>The stack is used for function calls and local variables. Whenever a function is called, some space is reserved on the stack for the local variables of the function. The stack is also used to store the return address (where the function was called), so when the function <code>return</code>s, the program knows where to continue execution.</p>
+    </>,
+    answer: <p>Does this have something to do with Stack Overflow?</p>,
   },
 
   {
-    question: (
-      <p>
-        <TS>{`function refrigerate (x: Bread | Butter) {
-  if ('type' in x) {
-    // x is now type Bread
-  } else {
-    // x is now type Butter
+    question: <>
+      <p>Yes, the website is named after an error known as — you guessed it — stack overflow. The size of the stack is typically quite limited compared to the total amount of RAM<sup>1</sup>, and going over the limit generally speaking means that the program crashes with a stack overflow error.</p>
+      <p>Since we can only use a small fraction of the available memory with the stack, what does that mean for the heap?</p>
+      <p><sup>1</sup> Even in 2021 the size of the stack is typically between 1 and 8 megabytes.</p>
+    </>,
+    answer: <>
+      <p>Since the stack can only store a limited amount of data before causing a terrible crash, it must mean that most data is stored on heap.</p>
+    </>
   }
-}`}</TS>
-      </p>
-    ),
-
-    answer: <p>{`That's useful. Now I know.`}</p>,
-  },
-
-  {
-    question: (
-      <p>
-        There is a problem with this code, though. <br />
-        Can you find some <b>butterbread</b>?
-      </p>
-    ),
-    answer: (
-      <p>
-        Oops. I found this <br />
-        <br />
-        <TS>{`const butterbread: Butter & Bread = {
-  type: 'sour',
-  weight: 500,
-  salty: false
-}`}</TS>{" "}
-        <br />
-        <br />
-        Looks awful.
-      </p>
-    ),
-  },
-
-  {
-    question: <p>Can you fix the definitions to prevent this?</p>,
-    answer: <p>Let me think</p>,
-  },
-
-  {
-    question: <p></p>,
-    answer: (
-      <p>
-        I think I fixed it!
-        <br />
-        <br />
-        <TS>{`
-type Bread = {
-  food: 'bread',// <-----
-  type: 'sour' | 'corn' | 'brioche',
-  weight: number
-}
-
-type Butter = {
-  food: 'butter',// <-----
-  salty: boolean
-}
-
-type SideDish = Bread | Butter
-`}</TS>
-      </p>
-    ),
-  },
-
-  {
-    question: <p>Excellent! Can you explain why it works?</p>,
-    answer: (
-      <p>
-        {`Because it is imposible to have a value that is `}
-        <code>Bread & Butter</code>, <br />
-        because <code>food</code> would have type <code>never</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        This pattern is called <b>discriminated union</b>.<br />
-        <br />
-        Now Enjoy your <code>[Bread, Butter]</code>.
-      </p>
-    ),
-    answer: <p></p>,
-  },
-
-  {
-    section: "Generics",
-  },
-
-  {
-    question: (
-      <p>
-        What is a good type for <br />
-        <br />
-        <TS>{`function id (x) { return x }`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        hm... <br />
-        <br />
-        <TS>{`function id (x: number): number {
-  return x;
-}
-  `}</TS>
-        ?
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        Well, <code>x</code> could be as well a string for example, right?
-      </p>
-    ),
-    answer: (
-      <p>
-        what about <br />
-        <br />
-        <TS>{`function id (x: number | string): number | string {
-  return x;
-}
-`}</TS>
-        ?
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>Does this type guarantee the same type as the argument is returned?</p>
-    ),
-    answer: (
-      <p>
-        Not really <br />
-        <br />
-        <TS>{`function id (x: number | string): number | string {
-  return "foo";
-}
-`}</TS>
-        <br />
-        For example, this implementation returns a string even if the argument
-        is number.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        <b>Generic</b> parameters introduce type variables that solve this
-        issue.
-        <br />
-        <br />
-        <TS>{`function id<T>(x: T): T {
-  return x;
-}`}</TS>
-      </p>
-    ),
-    answer: <p>I see. Now the return type is always the same as the input.</p>,
-  },
-
-  {
-    question: <p>How many functions have the same type?</p>,
-    answer: <p>Depends how you consider two functions the same.</p>,
-  },
-  {
-    question: (
-      <p>
-        How many functions have the type <br />
-        <br />
-        <TS>{`function f<T>(x: number): T { ... }`}</TS> <br />?
-      </p>
-    ),
-    answer: (
-      <p>None? How can we return something of a type we don't know or have?</p>
-    ),
-  },
-
-  { section: "The Promise of Pizza" },
-
-  {
-    question: <p>Time to order some pizza!</p>,
-    answer: <p>Sounds simple enough.</p>,
-  },
-  {
-    question: (
-      <p>
-        Let's start with placing the order. What does <code>fetch()</code>{" "}
-        return?
-      </p>
-    ),
-    answer: (
-      <p>
-        It's a <code>Promise</code>
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        Indeed! But what is inside of that <code>Promise</code> wrapper?
-      </p>
-    ),
-    answer: (
-      <p>
-        It depends on what is being fetched, so <code>{"Promise<any>"}</code>
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        What if we specifically call <code>fetch("UberEats/pizza")</code>?
-      </p>
-    ),
-    answer: (
-      <p>
-        Then we can narrow it down to <code>{"Promise<Pizza>"}</code>
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        So this should work now:
-        <br />
-        <TS>{`
-  function getPizza(): Promise<Pizza> {
-    return fetch("UberEats/pizza")
-  }
-
-  function eatPizza(bite: Pizza): void {
-    console.log("Nom!")
-  }
-
-  const pizza = await getPizza()
-  eatPizza(pizza)`}</TS>
-      </p>
-    ),
-    answer: <p>Looks good to me!</p>,
-  },
-  {
-    question: <p>What if the restaurant mixes up your order?</p>,
-    answer: <p>No worries, it's all type checked!</p>,
-  },
-  {
-    question: <p>Does TS also check it at run-time?</p>,
-    answer: <p>I guess not... So the types are useless?</p>,
-  },
-  {
-    question: <p>Or maybe we used the wrong type?</p>,
-    answer: <p>Yes, but we don't really know what type it will be</p>,
-  },
-  {
-    question: (
-      <p>
-        What if we consider the type to be <code>unknown</code> explicitly?
-        <br />
-        <TS>{`
-  function getPizzaHopefully(): Promise<unknown> {
-    return fetch("UberEats/pizza")
-  }`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        I suppose... But how can we do anything with an <code>unknown</code>{" "}
-        value?
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        Good question! What if we had a function like this:
-        <br />
-        <TS>{`
-  function smellsLikePizza(thing: unknown): boolean {
-    // nose-related code
-  }`}</TS>
-        <br />
-        <br />
-        Could you use this to call <code>eatPizza()</code> safely?
-      </p>
-    ),
-    answer: (
-      <p>
-        Of course! We can validate the result first:
-        <br />
-        <TS>{`
-  if (smellsLikePizza(thing)) {
-    eatPizza(thing)
-  }
-  `}</TS>
-      </p>
-    ),
-  },
-  {
-    question: <p>Looks good! Does it also pass the type-check?</p>,
-    answer: (
-      <p>
-        No... <code>thing</code> is still <code>unknown</code>
-      </p>
-    ),
-  },
-  {
-    question: <p>Any idea how to make it work?</p>,
-    answer: (
-      <p>
-        Well, I'm pretty sure it is <code>Pizza</code>, so I could just manually
-        cast the type:
-        <br />
-        <TS>{`
-  if (smellsLikePizza(thing)) {
-    const pizza = thing as Pizza
-    eatPizza(pizza)
-  }
-  `}</TS>
-        <br />
-        <br />
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        That works! But the type cast is not very elegant. How about we make TS
-        understand what <code>smellsLikePizza</code> is doing?
-      </p>
-    ),
-    answer: <p>Sound good, but how?</p>,
-  },
-  {
-    question: (
-      <p>
-        We can create our own type guard:
-        <br />
-        <TS>{`
-  function smellsLikePizza(thing: unknown): thing is Pizza {
-    // the same nose-related code
-  }`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        Cool! So now this should work again
-        <br />
-        <TS>{`
-  if (smellsLikePizza(thing)) {
-    eatPizza(thing)
-  }
-  `}</TS>
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        Let's go a bit further! Can you create a function{" "}
-        <TS>{`(thing: unknown) => Pizza`}</TS>?
-      </p>
-    ),
-    answer: (
-      <p>
-        No?! You can't turn <em>everything</em> into Pizza
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        Would this do the trick?
-        <br />
-        <TS>{`
-  function ensureItsPizza(thing: unknown): Pizza {
-    if (smellsLikePizza(thing)) {
-      return thing
-    } else {
-      throw new Error("Someone messed up!")
-    }
-  }
-
-  eatPizza(ensureItsPizza(thing))
-  `}</TS>
-      </p>
-    ),
-    answer: <p>I see, the Error prevents us from eating the wrong order</p>,
-  },
-  {
-    question: (
-      <p>
-        Exactly. Can you now rewrite our <code>getPizza()</code> to always
-        deliver Pizza?
-      </p>
-    ),
-    answer: (
-      <p>
-        Easy!
-        <br />
-        <TS>{`
-  async function getPizza(): Promise<Pizza> {
-    const thing: unknown = await fetch("UberEats/pizza")
-    const pizza: Pizza = ensureItsPizza(thing)
-    return pizza
-  }`}</TS>
-      </p>
-    ),
-  },
-  {
-    question: (
-      <p>
-        That <code>ensureItsPizza</code> is called a <strong>Decoder</strong>.
-        <br />
-        Libraries like <a href="https://github.com/gcanti/io-ts">io-ts</a> help
-        you create them more easily!
-      </p>
-    ),
-    answer: <p>:)</p>,
-  },
-
-  {
-    section: "Fine dining type-level dessert",
-  },
-
-  {
-    question: <p>Oh, you are still there!</p>,
-    answer: <p>Of course!</p>,
-  },
-
-  {
-    question: <p>{`It's time for some dessert.`}</p>,
-    answer: <p>What do you have?</p>,
-  },
-
-  {
-    question: <p>It depends. Do you have any allergies</p>,
-    answer: (
-      <p>
-        <TS>{`type Allergies = 'almond' | 'egg'`}</TS>
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        What is a value for
-        <br />
-        <TS>{`
-const x: Safe<"chocolate"> = ...
-`}</TS>
-      </p>
-    ),
-    answer: <p>true?</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What is a value for
-        <br />
-        <TS>{`
-const x: Safe<"egg"> = ...
-`}</TS>
-      </p>
-    ),
-    answer: <p>false.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What is a value for
-        <br />
-        <TS>{`
-const x: Safe<"egg" | "chocolate"> = ...
-`}</TS>
-      </p>
-    ),
-    answer: <p>It depends?.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        Type parameters in conditionals that are not wrapped are <b>naked</b>.
-      </p>
-    ),
-    answer: <p>How is that releated to my dessert?</p>,
-  },
-
-  {
-    question: <p>Naked type parameters distribute over union.</p>,
-    answer: <p>I am still lost.</p>,
-  },
-
-  {
-    question: (
-      <p>
-        What is a value for
-        <br />
-        <TS>{`
-type T = Safe<"egg" | "chocolate">
-`}</TS>
-        <br /> must be equal to <br />
-        <TS>{`
-type T = Safe<"egg"> | Safe<"chocolate">
-`}</TS>
-      </p>
-    ),
-    answer: (
-      <p>
-        I see. Then I can evaluate each Safe individually to get{" "}
-        <code>boolean</code>.
-      </p>
-    ),
-  },
-
-  {
-    question: (
-      <p>
-        Exactly <br />
-        <TS>{`
-type T = Safe<"egg"> | Safe<"chocolate">
-
-type T =       false |              true
-`}</TS>
-        <br />
-      </p>
-    ),
-    answer: <p>It makes sense, I guess.</p>,
-  },
-
-  {
-    section: "Conditional Persimmon & Recursive Parsley",
-  },
-  {
-    question: <p>We can leave this for another time!</p>,
-    answer: <p></p>,
-  },
-
-  {
-    section: "Spicy Curry at Howard's",
-  },
-  {
-    question: <p>We can leave this for another time!</p>,
-    answer: <p></p>,
-  },
-
-  {
-    section: "Enjoy your food!",
-  },
 ];

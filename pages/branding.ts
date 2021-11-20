@@ -1,2 +1,2 @@
 
-export const title = "The Little TypeScripter"
+export const title = "The Little Borrower"
